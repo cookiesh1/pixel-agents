@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>민원 답변 워크벤치</title>
+<style>
+:root{--bg:#f3eee4;--panel:#fff;--ink:#2b241f;--sub:#8a8178;--line:#e8e0d2;
+  --acc:#b0542f;--acc-soft:#f0e6db;--done:#5e7d4f;--amber:#c8861f;--paper:#faf7f1}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"Apple SD Gothic Neo","Pretendard",sans-serif;color:var(--ink);background:var(--bg);min-height:100dvh;padding:20px 18px 60px;font-size:14px}
+.serif{font-family:Georgia,"Apple SD Gothic Neo",serif}
+.mono{font-family:ui-monospace,Menlo,monospace}
+.wrap{max-width:1180px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.kick{font-size:11px;color:var(--acc);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+h1{font-size:22px;font-weight:700}h1 i{display:block;font-size:12px;color:var(--sub);font-style:normal;font-weight:400;margin-top:2px;font-family:-apple-system,sans-serif}
+.total{margin-left:auto;text-align:right;font-size:11px;color:var(--sub)}
+.total b{display:block;font-size:17px;color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.pad{padding:16px 18px}
+.lbl{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:11px}
+
+/* ── 가로 스텝 파이프라인 (히어로) ── */
+.pipe{display:flex;align-items:flex-start;justify-content:space-between;padding:22px 24px;margin-bottom:14px;gap:6px;overflow-x:auto}
+.stage{display:flex;flex-direction:column;align-items:center;text-align:center;min-width:120px;flex:1}
+.circ{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-size:22px;font-weight:700;
+  background:#efe7da;color:var(--sub);border:1px solid var(--line);transition:.3s}
+.stage.run .circ{background:var(--acc);color:#fff;border:none;animation:pp 1.1s infinite}
+.stage.run{position:relative}
+.stage.run .nm::after{content:'진행 중';display:block;font-size:10px;font-weight:700;color:#fff;background:var(--acc);border-radius:99px;padding:1px 8px;margin:4px auto 0;width:fit-content;animation:blink2 1s infinite}
+@keyframes blink2{50%{opacity:.5}}
+.live{margin:0 0 14px;padding:13px 18px;border-radius:14px;background:#fff;border:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;font-size:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.live .spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--acc-soft);border-top-color:var(--acc);animation:rot .8s linear infinite;flex:none;display:none}
+.live.busy .spin{display:block}
+.live.done .spin{display:none}
+@keyframes rot{to{transform:rotate(360deg)}}
+.live b{color:var(--acc)} .live.done b{color:var(--done)}
+.live .sub{color:var(--sub);font-size:12px;margin-left:auto}
+.stage.ok .circ{background:var(--acc);color:#fff;border:none}
+.stage.fin .circ{background:var(--done);color:#fff;border:none}
+@keyframes pp{0%{box-shadow:0 0 0 0 rgba(176,84,47,.4)}70%{box-shadow:0 0 0 9px rgba(176,84,47,0)}}
+.stage .nm{font-size:14px;font-weight:700;margin-top:9px}
+.stage .ds{font-size:11px;color:var(--sub);margin-top:2px}
+.stage .mdl{font-size:10.5px;margin-top:7px;padding:2px 9px;border-radius:99px;background:var(--acc-soft);color:var(--acc);display:none}
+.stage .cost{font-size:10px;color:var(--sub);margin-top:3px;display:none}
+.stage.ok .mdl,.stage.fin .mdl,.stage.ok .cost,.stage.fin .cost{display:inline-block}
+.hop{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:18px;min-width:54px}
+.hop .ln{font-size:13px;color:var(--line)}
+.hop .lbl2{font-size:9.5px;color:var(--sub);border:1px solid var(--line);border-radius:99px;padding:1px 7px;margin-bottom:4px;white-space:nowrap}
+
+.grid{display:grid;grid-template-columns:330px 1fr;gap:14px}
+@media(max-width:880px){.grid{grid-template-columns:1fr}}
+
+/* input */
+.tabs{display:flex;gap:5px;margin-bottom:11px}
+.tab{flex:1;text-align:center;font-size:12px;padding:8px;border-radius:9px;cursor:pointer;color:var(--sub);background:#efe7da;border:1px solid var(--line)}
+.tab.on{color:#fff;background:var(--acc);border:none;font-weight:700}
+.pane{display:none}.pane.on{display:block}
+textarea,input[type=text]{width:100%;font:inherit;color:var(--ink);background:#fdfbf7;border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px}
+textarea#body{min-height:108px;resize:vertical}
+.up{border:1.5px dashed var(--line);border-radius:11px;padding:16px;text-align:center;color:var(--sub);font-size:12px;cursor:pointer}
+.up:hover{border-color:var(--acc);color:var(--ink)}
+.dslist{max-height:230px;overflow:auto;display:flex;flex-direction:column;gap:5px}
+.dsitem{font-size:12px;padding:8px 10px;border-radius:8px;background:#fbf8f3;border:1px solid var(--line);cursor:pointer}
+.dsitem:hover,.dsitem.sel{border-color:var(--acc)}.dsitem.sel{background:var(--acc-soft)}
+.seg{display:flex;gap:5px;flex-wrap:wrap;margin:9px 0;align-items:center}
+.seg b{font-size:11px;color:var(--sub);width:46px}
+.opt{font-size:12px;padding:5px 11px;border-radius:8px;cursor:pointer;background:#efe7da;border:1px solid var(--line);color:var(--sub)}
+.opt.on{color:#fff;background:var(--acc);border:none;font-weight:700}
+.run{width:100%;font:inherit;font-weight:700;color:#fff;background:var(--acc);border:none;border-radius:11px;padding:11px;cursor:pointer;margin-top:4px;box-shadow:0 4px 14px rgba(176,84,47,.28)}
+.run:disabled{opacity:.5}
+
+/* 구조화 출력 카드 */
+.struct{display:flex;flex-direction:column;gap:0}
+.srow{padding:13px 16px;border-top:1px solid var(--line)}
+.srow:first-child{border-top:none}
+.srow .h{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;margin-bottom:9px}
+.srow .h .n{width:19px;height:19px;border-radius:6px;background:var(--acc-soft);color:var(--acc);display:grid;place-items:center;font-size:11px}
+.srow .h .q{margin-left:auto;font-size:11px;color:var(--sub);font-weight:400}
+.pill{display:inline-block;font-size:11.5px;padding:2px 10px;border-radius:99px;margin:2px 4px 2px 0}
+.pill.dark{background:var(--ink);color:#fff}
+.pill.soft{background:var(--acc-soft);color:var(--acc)}
+.pill.tag{border:1px solid var(--line);color:var(--sub)}
+.bul{list-style:none;padding:0;margin:0}
+.bul li{font-size:13px;padding:3px 0 3px 14px;position:relative}
+.bul li::before{content:'';position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--acc)}
+.sub2{font-size:11px;color:var(--sub);margin-bottom:5px}
+.waiting{color:var(--sub);font-size:12px;padding:20px;text-align:center}
+
+/* doc */
+.doc{display:flex;flex-direction:column;min-height:480px}
+.dochead{display:flex;align-items:center;gap:9px;padding:13px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.dochead .t{font-weight:700;font-size:14px}
+.score{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;background:var(--done)}
+.score.fail{background:var(--amber)}
+.vers{display:flex;gap:5px}.vtab{font-size:11px;padding:3px 9px;border-radius:7px;cursor:pointer;background:#efe7da;border:1px solid var(--line);color:var(--sub)}
+.vtab.on{color:#fff;background:var(--acc);border:none;font-weight:700}
+.actions{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.act{font:inherit;font-size:11.5px;color:var(--sub);background:#efe7da;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+.act:hover{color:var(--ink)}.act.on{color:#fff;background:var(--acc);border:none}
+.paper{margin:14px 16px;padding:26px 28px;border-radius:12px;background:var(--paper);border:1px solid var(--line);
+  font-size:14px;line-height:1.9;white-space:pre-wrap;flex:1;overflow:auto;min-height:300px;outline:none;font-family:Georgia,"Apple SD Gothic Neo",serif}
+.paper[contenteditable=true]{box-shadow:inset 0 0 0 2px var(--acc)}
+.paper .ph{color:var(--sub);font-family:-apple-system,sans-serif;font-size:13px}
+.paper mark{background:#fbeec2;color:#8a5a00;padding:0 4px;border-radius:4px;font-weight:600}
+.paper .cur{display:inline-block;width:7px;height:16px;background:var(--acc);vertical-align:-2px;animation:bl .9s steps(1) infinite}
+@keyframes bl{50%{opacity:0}}
+.editbar{display:none;margin:0 16px 12px;gap:7px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:var(--sub)}
+.editbar.show{display:flex}.editbar input{flex:1;margin:0;min-width:150px}
+.review{margin:0 16px 13px;font-size:12px;color:var(--sub)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:11px;font-size:12.5px;opacity:0;transition:.25s;pointer-events:none}
+.toast.show{opacity:1}
+</style></head>
+<body><div class="wrap">
+  <header>
+    <div>
+      <div class="kick">Multi-Agent · Supervisor 구조</div>
+      <h1 class="serif">민원 답변 워크벤치 <i>입력 → 분류·검색·작성·검수 → 검토·발송</i></h1>
+    </div>
+    <div class="total"><span>누적 비용</span><b class="mono" id="total">$0.0000</b></div>
+  </header>
+
+  <!-- 가로 스텝 파이프라인 -->
+  <div class="card pipe" id="pipe">
+    <div class="stage" data-s="classify"><div class="circ">1</div><div class="nm serif">분류</div><div class="ds">부서·유형 판별</div><div class="mdl mono"></div><div class="cost mono"></div></div>
+    <div class="hop"><div class="lbl2">민원+부서유형</div><div class="ln">→</div></div>
+    <div class="stage" data-s="search"><div class="circ">2</div><div class="nm serif">검색</div><div class="ds">법령·쟁점 fan-out</div><div class="mdl mono"></div><div class="cost mono"></div></div>
+    <div class="hop"><div class="lbl2">근거+쟁점</div><div class="ln">→</div></div>
+    <div class="stage" data-s="write"><div class="circ">3</div><div class="nm serif">작성</div><div class="ds">근거 기반 초안</div><div class="mdl mono"></div><div class="cost mono"></div></div>
+    <div class="hop"><div class="lbl2">답변 초안</div><div class="ln">→</div></div>
+    <div class="stage" data-s="review"><div class="circ">4</div><div class="nm serif">검수</div><div class="ds">정확성·근거·말투</div><div class="mdl mono"></div><div class="cost mono"></div></div>
+  </div>
+
+  <div class="live" id="live"><span class="spin"></span><span id="liveText">민원을 입력하고 <b>✦ 초안 생성</b>을 누르세요</span><span class="sub" id="liveSub"></span></div>
+
+  <div class="grid">
+    <!-- 좌: 입력 + 구조화 출력 -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card pad">
+        <div class="tabs"><div class="tab on" data-pane="direct">✍️ 직접</div><div class="tab" data-pane="upload">📑 업로드</div><div class="tab" data-pane="ds">🗂️ 데이터셋</div></div>
+        <div class="pane on" id="p-direct">
+          <input type="text" id="title" placeholder="민원 제목">
+          <textarea id="body" placeholder="민원 본문을 붙여넣으세요"></textarea>
+        </div>
+        <div class="pane" id="p-upload">
+          <div class="up" id="drop">📂 엑셀·CSV 클릭/드롭<input type="file" id="file" accept=".xlsx,.csv" hidden></div>
+          <div class="dslist" id="uplist" style="margin-top:8px"></div>
+        </div>
+        <div class="pane" id="p-ds"><input type="text" id="dsSearch" placeholder="🔎 검색"><div class="dslist" id="dslist"></div></div>
+        <div class="seg"><b>어조</b><span class="opt" data-tone="정중">정중</span><span class="opt on" data-tone="표준">표준</span><span class="opt" data-tone="간결">간결</span><span class="opt" data-tone="단호">단호</span></div>
+        <div class="seg"><b>분량</b><span class="opt" data-len="요약">요약</span><span class="opt on" data-len="표준">표준</span><span class="opt" data-len="상세">상세</span></div>
+        <button class="run" id="run">✦ 초안 생성</button>
+      </div>
+      <div class="card">
+        <div class="pad" style="padding-bottom:0"><div class="lbl">에이전트 분석 결과</div></div>
+        <div class="struct" id="struct"><div class="waiting">초안을 생성하면 각 에이전트의 분석이 여기 구조화되어 표시됩니다.</div></div>
+      </div>
+    </div>
+
+    <!-- 우: 공문 워크벤치 -->
+    <div class="card doc">
+      <div class="dochead">
+        <span class="score" id="score" style="display:none">–</span>
+        <span class="t serif">답변 초안</span>
+        <div class="vers" id="vers"></div>
+        <div class="actions">
+          <button class="act" id="edit">✏️ 편집</button><button class="act" id="regen">🔄 재생성</button>
+          <button class="act" id="copy">복사</button><button class="act" id="dl">다운로드</button>
+        </div>
+      </div>
+      <div class="paper" id="paper" spellcheck="false"><span class="ph">왼쪽에서 민원을 입력하고 어조·분량을 고른 뒤 <b>✦ 초안 생성</b>. 작성가가 실시간으로 써내려 갑니다. <mark>[담당자 확인]</mark>은 AI가 단정하지 않은 부분. 생성 후 ✏️편집·문장 드래그 정제 가능.</span></div>
+      <div class="editbar" id="editbar"><span>🪄 선택영역:</span><input type="text" id="refineIns" placeholder="예: 더 정중하게 / 한 문장으로"><button class="act" id="refineBtn">선택 문장 다시쓰기</button></div>
+      <div class="review" id="review"></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const stages={};$$('.stage').forEach(s=>stages[s.dataset.s]=s);
+let tone='표준',len='표준',current={title:'',body:'',no:'-'},versions=[],curVer=-1;
+const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400);};
+const fmt=c=>'$'+(c||0).toFixed(4);
+
+$$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('on'));t.classList.add('on');$$('.pane').forEach(p=>p.classList.remove('on'));$('#p-'+t.dataset.pane).classList.add('on');});
+$$('.opt').forEach(o=>o.onclick=()=>{o.parentElement.querySelectorAll('.opt').forEach(x=>x.classList.remove('on'));o.classList.add('on');if(o.dataset.tone)tone=o.dataset.tone;else len=o.dataset.len;});
+
+let DS=[];fetch('/api/list').then(r=>r.json()).then(l=>{DS=l;renderDS(l);});
+function renderDS(list){$('#dslist').innerHTML='';list.forEach(m=>{const d=document.createElement('div');d.className='dsitem';d.textContent=m.no.slice(-6)+' · '+m.title;
+  d.onclick=()=>{$$('#dslist .dsitem').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');current={title:m.title,body:m.body,no:m.no};toast('선택됨');};$('#dslist').appendChild(d);});}
+$('#dsSearch').oninput=e=>renderDS(DS.filter(m=>m.title.includes(e.target.value)));
+$('#drop').onclick=()=>$('#file').click();
+['dragover','drop'].forEach(ev=>$('#drop').addEventListener(ev,e=>{e.preventDefault();if(ev==='drop'&&e.dataTransfer.files[0])upload(e.dataTransfer.files[0]);}));
+$('#file').onchange=e=>e.target.files[0]&&upload(e.target.files[0]);
+function upload(f){toast('분석 중…');f.arrayBuffer().then(buf=>fetch('/api/upload',{method:'POST',headers:{'X-Filename':f.name},body:buf}).then(r=>r.json()).then(d=>{
+  if(d.error){toast(d.error);return;}$('#uplist').innerHTML='';d.rows.forEach(m=>{const el=document.createElement('div');el.className='dsitem';el.textContent=m.title;
+    el.onclick=()=>{$$('#uplist .dsitem').forEach(x=>x.classList.remove('sel'));el.classList.add('sel');current={title:m.title,body:m.body,no:m.no};toast('선택됨');};$('#uplist').appendChild(el);});toast(d.rows.length+'건 로드');}));}
+function gather(){const tab=$('.tab.on').dataset.pane;return tab==='direct'?{title:$('#title').value.trim(),body:$('#body').value.trim(),no:'직접'}:current;}
+
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const mk=s=>esc(s).replace(/\[담당자 확인\]/g,'<mark>[담당자 확인]</mark>').replace(/\[확인필요\]/g,'<mark>[확인필요]</mark>');
+function stageSet(s,st,meta){const el=stages[s];if(!el)return;el.classList.remove('run','ok','fin');
+  if(st==='run')el.classList.add('run');
+  if(st==='ok'||st==='fin'){el.classList.add(st==='fin'?'fin':'ok');el.querySelector('.circ').innerHTML='✓';
+    if(meta){el.querySelector('.mdl').textContent=meta.model;el.querySelector('.cost').textContent=fmt(meta.cost);}}}
+function pills(arr,cls){return (arr||[]).map(x=>'<span class="pill '+cls+'">'+esc(x)+'</span>').join('');}
+
+let struct={};
+function renderStruct(){const s=$('#struct');if(!Object.keys(struct).length){return;}let h='';
+  if(struct.classify){const c=struct.classify;h+=`<div class="srow"><div class="h"><span class="n">1</span>분류<span class="q">어느 부서·유형인가</span></div>
+    <span class="pill dark">${esc(c.department||'')}</span><span class="pill soft">${esc(c.category||'')}</span><span class="pill soft">난이도 ${esc(c.difficulty||'')}</span></div>`;}
+  if(struct.law){h+=`<div class="srow"><div class="h"><span class="n">2</span>법령 근거</div><div class="sub2">${esc(struct.law.summary||'')}</div>${pills(struct.law.laws,'tag')}</div>`;}
+  if(struct.issues){h+=`<div class="srow"><div class="h"><span class="n">3</span>핵심 쟁점</div><ul class="bul">${(struct.issues.questions||[]).map(q=>'<li>'+esc(q)+'</li>').join('')}</ul>
+    <div class="sub2" style="margin-top:8px">추출 키워드</div>${pills(struct.issues.keywords,'tag')}</div>`;}
+  if(struct.tone){const t=struct.tone;h+=`<div class="srow"><div class="h"><span class="n">4</span>톤·민감도</div>
+    <span class="pill soft">${esc(t.sentiment||'')}</span><span class="pill soft">긴급 ${esc(t.urgency||'')}</span><div class="sub2" style="margin-top:6px">${esc(t.guide||'')}</div></div>`;}
+  s.innerHTML=h;}
+
+function setLive(text, sub, state){  // state: 'busy' | 'done'
+  $('#liveText').innerHTML=text; $('#liveSub').textContent=sub||'';
+  const el=$('#live'); el.classList.remove('busy','done'); if(state)el.classList.add(state);
+}
+function startRun(input){
+  if(!input.title&&!input.body){toast('민원을 입력/선택하세요');return;}
+  current=input;struct={};$('#struct').innerHTML='<div class="waiting">에이전트 가동 중…</div>';
+  setLive('① <b>분류</b> 시작 중…','민원을 분석할 준비','busy');
+  $$('.stage').forEach(s=>{s.classList.remove('run','ok','fin');s.querySelector('.circ').innerHTML=({classify:'1',search:'2',write:'3',review:'4'})[s.dataset.s];});
+  $('#paper').contentEditable=false;$('#edit').classList.remove('on');$('#editbar').classList.remove('show');
+  $('#paper').innerHTML='<span class="ph">에이전트 가동 중…</span>';$('#review').textContent='';$('#score').style.display='none';
+  $('#run').disabled=$('#regen').disabled=true;let buf='';
+  fetch('/api/start',{method:'POST',body:JSON.stringify({...input,tone,length:len})}).then(r=>r.json()).then(({job})=>{
+    let since=0, stop=false;
+    const handle=(d)=>{const a=d.agent,o=d.output;
+      if(a==='input')return;
+      if(a==='classify'){if(d.status==='start'){stageSet('classify','run');setLive('① <b>분류 중</b> — 어느 부서·유형 민원인지 판별','1 / 4 단계','busy');}else{struct.classify=o.data;stageSet('classify','ok',o);renderStruct();$('#total').textContent=fmt(o.total);}return;}
+      if(a==='search'&&d.status==='start'){stageSet('search','run');setLive('② <b>검색 중</b> — 법령·쟁점·톤 3개 에이전트 동시 분석','2 / 4 단계','busy');return;}
+      if(['law','issues','tone'].includes(a)&&d.status==='subdone'){struct[a]=o.data;renderStruct();return;}
+      if(a==='search'&&d.status==='done'){stageSet('search','ok',o);$('#total').textContent=fmt(o.total);return;}
+      if(a==='write'){if(d.status==='start'){stageSet('write','run');setLive('③ <b>작성 중</b> — 근거 기반 답변 초안 생성','3 / 4 단계','busy');}
+        else if(d.status==='token'){if(!buf)$('#paper').innerHTML='';buf+=o;$('#paper').innerHTML=mk(buf)+'<span class="cur"></span>';$('#paper').scrollTop=$('#paper').scrollHeight;}
+        else if(d.status==='done'){stageSet('write','ok',o);$('#total').textContent=fmt(o.total);}return;}
+      if(a==='review'){if(d.status==='start'){stageSet('review','run');setLive('④ <b>검수 중</b> — 정확성·근거·말투 점검','4 / 4 단계','busy');}else{stageSet('review','fin',o);$('#total').textContent=fmt(o.total);}return;}
+      if(a==='final'){if(d.status==='error'){$('#paper').textContent='오류: '+o;setLive('⚠️ 오류 발생','','done');}
+        else{const r=o.review||{},pass=r.verdict==='PASS';addVersion(o.draft,tone+'·'+len);
+          const sc=$('#score');sc.style.display='grid';sc.className='score'+(pass?'':' fail');sc.textContent=(r.score??'');
+          $('#review').innerHTML=r.issues&&r.issues.length?'🧐 '+esc(r.issues.join(' · ')):'🧐 검수 통과';$('#total').textContent=fmt(o.total);
+          setLive('✓ <b>완료</b> — 답변 초안이 생성되었습니다 ('+(r.score??'')+'점)','','done');}
+        $('#run').disabled=$('#regen').disabled=false;stop=true;return;}
+    };
+    async function poll(){
+      while(!stop){
+        try{
+          const r=await fetch('/api/poll?job='+job+'&since='+since).then(x=>x.json());
+          (r.events||[]).forEach(handle); since=r.next??since;
+          if(r.done){ if(!stop){ $('#run').disabled=$('#regen').disabled=false; } stop=true; break; }
+        }catch(e){}
+        await new Promise(res=>setTimeout(res,350));
+      }
+    }
+    poll();
+  });
+}
+function addVersion(t,l){versions.push({text:t,label:'v'+(versions.length+1)});curVer=versions.length-1;renderVers();show(curVer);}
+function renderVers(){const v=$('#vers');v.innerHTML='';versions.forEach((x,i)=>{const t=document.createElement('div');t.className='vtab'+(i===curVer?' on':'');t.textContent=x.label;t.onclick=()=>{curVer=i;renderVers();show(i);};v.appendChild(t);});}
+function show(i){$('#paper').innerHTML=mk(versions[i].text);}
+$('#run').onclick=()=>startRun(gather());
+$('#regen').onclick=()=>{if(current.title||current.body)startRun(current);};
+$('#edit').onclick=()=>{const p=$('#paper'),on=p.contentEditable!=='true';p.contentEditable=on;$('#edit').classList.toggle('on',on);$('#editbar').classList.toggle('show',on);
+  if(on){p.focus();toast('편집 모드');}else{if(versions[curVer])versions[curVer].text=p.innerText;toast('저장됨');}};
+$('#refineBtn').onclick=()=>{const sel=window.getSelection().toString().trim();if(!sel){toast('문장을 드래그하세요');return;}toast('정제 중…');
+  fetch('/api/refine',{method:'POST',body:JSON.stringify({text:sel,instruction:$('#refineIns').value||'다듬어'})}).then(r=>r.json()).then(d=>{
+    const p=$('#paper');p.innerHTML=mk(p.innerText.replace(sel,d.text));if(versions[curVer])versions[curVer].text=p.innerText;toast('완료');});};
+$('#copy').onclick=()=>{navigator.clipboard.writeText($('#paper').innerText);toast('복사됨');};
+$('#dl').onclick=()=>{const b=new Blob([$('#paper').innerText],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='민원답변초안.txt';a.click();};
+</script>
+</body></html>
